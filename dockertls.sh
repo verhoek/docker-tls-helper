@@ -2,6 +2,7 @@
 
 : ${SRV_SUBJ}
 : ${CLT_SUBJ}
+: ${REMOTE_DOCKER_SERVER}
 
 CA_SUBJ="${CA_SUBJ:-"/C=${CA_C:-"FR"}/L=${CA_L:-"Paris"}/O=${CA_O:-"Ekino"}/OU=${CA_OU:-"DevOps"}/CN=${CA_CN:-"Docker TLS"}"}"
 CERTS_PATH="${CERTS_PATH:-"dockertls"}"
@@ -66,6 +67,19 @@ fix_perms() {
 
 # --------------------------------------- USAGE
 
+setup_remote () {
+
+ssh root@${REMOTE_DOCKER_SERVER} <<EOF
+mkdir -pv /etc/docker/tls
+chown root:root /etc/docker/tls
+chmod 711 /etc/docker/tls
+sudo service docker stop
+EOF
+
+scp ca.crt server.crt server.key root@${REMOTE_DOCKER_SERVER}:/etc/docker/tls/.
+}
+
+
 display_usage() {
   b="$(tput bold)"
   r="$(tput sgr0)"
@@ -84,7 +98,7 @@ display_usage() {
  $P
  Prepare your remote server and stop docker service
  $CODE
-   local> ${b}ssh remote${CODE}
+   local> ${b}ssh ${REMOTE_DOCKER_SERVER}${CODE}
    remote> ${b}sudo mkdir -pv /etc/docker/tls${CODE}
    remote> ${b}sudo chown root:root /etc/docker/tls${CODE}
    remote> ${b}sudo chmod 711 /etc/docker/tls${CODE}
@@ -131,6 +145,7 @@ main() {
   create_server
   create_client
   fix_perms
+  setup_remote
   display_usage
 }
 
